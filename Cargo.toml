@@ -10,3 +10,4 @@ edition = "2018"
 isahc = "0.7.3"
 chrono = "0.4"
 http = "*"
+structopt = { version = "0.2", default-features = false }
