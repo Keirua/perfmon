@@ -3,7 +3,7 @@ extern crate chrono;
 extern crate http;
 extern crate structopt;
 use chrono::prelude::*;
-use http::header::HeaderValue;
+use http::header::{HeaderMap, HeaderValue};
 use http::StatusCode;
 
 use structopt::StructOpt;
@@ -16,14 +16,15 @@ struct Opt {
 }
 
 #[derive(Debug)]
-struct MonitoringData {
+struct MonitoringData<'a> {
     response_time_ms:i64,
-    response_code: StatusCode
+    response_code: StatusCode,
+    headers: &'a HeaderMap<HeaderValue>
 }
 
-impl MonitoringData {
-    pub fn new(response_time_ms: i64, response_code: StatusCode) -> MonitoringData {
-        MonitoringData{response_time_ms, response_code}
+impl<'a> MonitoringData<'a> {
+    pub fn new(response_time_ms: i64, response_code: StatusCode, headers: &'a HeaderMap<HeaderValue>) -> MonitoringData {
+        MonitoringData{response_time_ms, response_code, headers}
     }
 }
 
@@ -33,12 +34,9 @@ fn main() {
     let start = Utc::now();
     let response = isahc::head(opt.url).unwrap();
     let end = Utc::now();
+
     let millis = end.timestamp_millis()-start.timestamp_millis();
-    let result = MonitoringData::new(millis, response.status());
+    let result = MonitoringData::new(millis, response.status(), response.headers());
 
     println!("{:?}", result);
-    /*let millis_str = format!("{}", millis);
-    response.headers_mut().insert("X-MONITHOR-TIME-ms", HeaderValue::from_str(&millis_str).unwrap());
-    response.headers_mut().insert("X-MONITHOR-TIME-ms", HeaderValue::from_str(&millis_str).unwrap());
-    println!("{:#?}", response.headers());*/
 }
