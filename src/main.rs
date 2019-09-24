@@ -39,10 +39,9 @@ impl<'a> fmt::Debug for MonitoringData<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{{ response_time: {:?},\nresponse_code: {}\nheaders: {:#?} }}",
+            "{{ \"response_time\": {:?},\n\"response_code\": {}}}",
             self.response_time_ms,
-            self.response_code.as_u16(),
-            self.headers
+            self.response_code.as_u16()
         )
     }
 }
