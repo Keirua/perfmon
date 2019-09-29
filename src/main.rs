@@ -6,7 +6,6 @@ use chrono::prelude::*;
 use isahc::prelude::*;
 use http::header::{HeaderMap, HeaderValue};
 use http::StatusCode;
-use std::fmt;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -16,12 +15,28 @@ struct Opt {
     url: String,
 }
 
+use serde::ser::{Serialize, Serializer, SerializeStruct};
+
 struct MonitoringData<'a> {
     response_time_ms: i64,
     response_code: StatusCode,
     response_body_size_bytes: usize,
     headers: &'a HeaderMap<HeaderValue>,
 }
+
+impl<'a> Serialize for MonitoringData<'a> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut state = serializer.serialize_struct("MonitoringData", 3)?;
+        state.serialize_field("response_time", &self.response_time_ms)?;
+        state.serialize_field("response_code", &self.response_code.as_str())?;
+        state.serialize_field("body_size", &self.response_body_size_bytes)?;
+        state.end()
+    }
+}
+
 
 impl<'a> MonitoringData<'a> {
     pub fn new(
@@ -39,17 +54,6 @@ impl<'a> MonitoringData<'a> {
     }
 }
 
-impl<'a> fmt::Debug for MonitoringData<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{{ \"response_time\": {:?},\n\"response_code\": {} }}",
-            self.response_time_ms,
-            self.response_code.as_u16()
-        )
-    }
-}
-
 fn main() -> Result<(), isahc::Error>{
     let opt = Opt::from_args();
 
@@ -64,6 +68,7 @@ fn main() -> Result<(), isahc::Error>{
         response.headers(),
     );
 
-    println!("{:#?}", result);
+    let json = serde_json::to_string(&result).unwrap();
+    println!("{}", json);
     Ok(())
 }
